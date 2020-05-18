@@ -1,0 +1,92 @@
+service: dcss-central-event-store
+
+provider:
+  name: aws
+  runtime: python3.8
+  region: us-west-2
+  memorySize: 128
+  iamRoleStatements:
+    # Read API keys
+    - Effect: Allow
+      Action:
+        - dynamodb:GetItem
+      Resource:
+        - Fn::GetAtt:
+            - KeyTable
+            - Arn
+    # Read/query and write (no delete) events
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+        - dynamodb:GetItem
+        - dynamodb:Query
+      Resource:
+        - Fn::GetAtt:
+            - EventTable
+            - Arn
+  httpApi:
+    payload: "2.0"
+
+functions:
+  submit:
+    handler: submit.handler
+    events:
+      - httpApi:
+          path: /submit
+          method: post
+    environment:
+      KEY_TABLE_NAME:
+        Ref: KeyTable
+      EVENT_TABLE_NAME:
+        Ref: EventTable
+  events:
+    handler: query.events
+    events:
+      - httpApi:
+          path: /events
+          method: get
+    environment:
+      EVENT_TABLE_NAME:
+        Ref: EventTable
+
+resources:
+  Resources:
+    KeyTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: key
+            AttributeType: S
+        BillingMode: PAY_PER_REQUEST
+        KeySchema:
+          - AttributeName: key
+            KeyType: HASH
+    EventTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: ts_day
+            AttributeType: N
+          - AttributeName: ts
+            AttributeType: N
+        BillingMode: PAY_PER_REQUEST
+        KeySchema:
+          - AttributeName: ts_day # timestamp bucketed to the day
+            KeyType: HASH
+          - AttributeName: ts # timestamp to the millisecond
+            KeyType: RANGE
+  Outputs:
+    KeyTable:
+      Value:
+        Ref: KeyTable
+    EventTable:
+      Value:
+        Ref: EventTable
+# Only package *.py files in root dir
+package:
+  excludeDevDependencies: false
+  include:
+    - "!./**"
+    - "./*.py"
+  exclude:
+    - "**"

@@ -1,0 +1,9 @@
+{
+  "name": "dcss-central-event-store",
+  "description": "",
+  "version": "0.1.0",
+  "dependencies": {},
+  "devDependencies": {
+    "serverless": "^1.71.1"
+  }
+}

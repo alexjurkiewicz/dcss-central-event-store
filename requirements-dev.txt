@@ -1,0 +1,4 @@
+boto3-stubs[dynamodb] # after changing or installing this, run `python -m mypy_boto3`
+black
+mypy
+pylint
